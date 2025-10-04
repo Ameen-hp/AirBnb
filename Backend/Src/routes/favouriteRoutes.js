@@ -1,12 +1,12 @@
 import express from "express";
-import { addFavourite, getFavourites } from "../controllers/home.js";
+import { toggleFavourite, getUserFavourites } from "../controllers/home.js";
 
 const router = express.Router();
 
 // Add or remove a home from favourites
-router.post("/:id",addFavourite);
+router.post("/:id",toggleFavourite);
 
 // Get all favourite homes
-router.get("/",getFavourites);
+router.get("/",getUserFavourites);
 
 export default router;

@@ -10,8 +10,10 @@ const FavouriteButton = ({ homeId }) => {
     e.stopPropagation(); // Prevent parent card click
     try {
       const res = await fetch(`http://localhost:5000/api/favourites/${homeId}`, {
-        method: "POST",
-      });
+  method: "POST",
+  credentials: "include", // 👈 this is required for session-based auth
+});
+
       if (res.ok) {
         setIsFavorite(!isFavorite);
         navigate("/favourites"); // redirect to favourites page

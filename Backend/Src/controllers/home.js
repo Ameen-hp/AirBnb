@@ -1,6 +1,7 @@
 import Home from "../models/homes.js";
 // import User from "../models/user.js"
 import  Favourite  from "../models/Favourites.js"
+import User from "../models/user.js"
 // Add Home Controller
 export const addHome = async (req, res) => {
   try {
@@ -55,43 +56,57 @@ export const getHomeById = async (req, res) => {
 
 
 // Add a home to favorites
-export const addFavourite = async (req, res) => {
-  try {
-    const { id } = req.params; // home ID
-    let fav = await Favourite.findOne(); // Using single collection for now
+// controllers/home.js
 
-    if (!fav) {
-      fav = await Favourite.create({ homes: [id] });
+export const toggleFavourite = async (req, res) => {
+  try {
+    const userId = req.session.user?._id;
+    const homeId = req.params.id;
+
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const index = user.favourites.indexOf(homeId);
+
+    if (index === -1) {
+      user.favourites.push(homeId);
+      await user.save();
+      return res.json({ message: "Added to favourites" });
     } else {
-      // If already in favourites, remove it, otherwise add it
-      if (fav.homes.includes(id)) {
-        fav.homes.pull(id);
-      } else {
-        fav.homes.push(id);
-      }
-      await fav.save();
+      user.favourites.splice(index, 1);
+      await user.save();
+      return res.json({ message: "Removed from favourites" });
     }
 
-    res.status(200).json({ success: true, favourites: fav.homes });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Server Error" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 };
+
+
 
 // Get all favourite homes
-export const getFavourites = async (req, res) => {
+// controllers/home.js
+
+export const getUserFavourites = async (req, res) => {
   try {
-    const fav = await Favourite.findOne().populate("homes");
-    if (!fav || fav.homes.length === 0) {
-      return res.status(200).json([]);
-    }
-    res.status(200).json(fav.homes);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Server Error" });
+    const userId = req.session.user?._id;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const user = await User.findById(userId).populate("favourites");
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json(user.favourites);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 };
+
+
 
 // Update the home
 
@@ -121,21 +136,26 @@ export const updateHome = async (req, res) => {
 
 // delete the  home 
 
+
 export const deleteHome = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Delete home by ID
+    // Delete the home by ID
     const deletedHome = await Home.findByIdAndDelete(id);
     if (!deletedHome) {
       return res.status(404).json({ message: "Home not found" });
     }
 
-    // Delete this home from all users' favourites
-    await Favourite.deleteMany({ houseId: id });
+    // ✅ Remove this home from all users' favourites arrays
+    await User.updateMany(
+      { favourites: id },
+      { $pull: { favourites: id } }
+    );
 
     res.status(200).json({ message: "Home deleted successfully" });
   } catch (err) {
+    console.error("Error deleting home:", err);
     res.status(500).json({ message: "Error deleting home", error: err.message });
   }
 };

@@ -38,6 +38,7 @@ app.use("/api/auth", authRoutes);          // <-- added auth routes
 app.use("/api/homes", homeRoutes);
 app.use("/api/favourites", favouriteRoutes);
 
+
 // Start server
 const PORT = 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
